@@ -1,0 +1,46 @@
+global:
+  logging:
+    # use syslog instead of stdout because it makes journald happy
+    #- type: syslog
+    - type: stdout
+      format: human
+      level: warn
+{% if enable_prometheus|default(false)|bool == true %}
+  monitoring:
+    - type: prometheus
+      listen: '{{ ansible_default_ipv4.address }}:{{ prometheus_port|default(9811)}}'
+      listen_freebind: true
+{% endif %}
+
+jobs:
+{% for snapjob in zrepl_snapjobs %}
+- name: snapjob_{{ snapjob.name}}
+  type: push
+  connect:
+    type: tls
+    address: {{ zrepl_sink_server | default("undefined_sink_server:port_num") }}
+    ca: {{ zrepl_config_path | default("/etc/zrepl") }}/{{ zrepl_tls_ca_crt_name | default("ca.crt") }}
+    cert: {{ zrepl_config_path | default("/etc/zrepl") }}/{{ zrepl_tls_cert_name | default("{{ ansible_hostname }}.crt") }}
+    key: {{ zrepl_config_path | default("/etc/zrepl") }}/{{ zrepl_tls_private_key_name | default("{{ ansible_hostname }}.key") }}
+    server_cn: {{ zrepl_tls_server_cn | default("sink-srv") }}
+  filesystems: {% raw %}{{% endraw %}
+
+    {% filter indent(width=4) %}{{ snapjob.filesystems }}{% endfilter %}
+    {% raw %}}{% endraw %}
+
+  send:
+    {% filter indent(width=4) %}{{ snapjob.send_options }}{% endfilter %}
+  replication:
+    {% filter indent(width=4) %}{{ snapjob.replication_options }}{% endfilter %}
+  snapshotting:
+    {% filter indent(width=4) %}{{ snapjob.snapshotting_options }}{% endfilter %}{% if enable_threshold_script | default(false) | bool %}{% filter indent(width=0) %}
+    hooks:
+      - type: command
+        path: /etc/zrepl/hooks/zfs_threshold_check.sh
+        timeout: 30s
+        err_is_fatal: true{% endfilter %}{% endif %}
+
+  pruning:
+    {% filter indent(width=4) %}{{ snapjob.pruning_options }}{% endfilter %}
+
+{% endfor %}

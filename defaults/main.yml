@@ -1,0 +1,126 @@
+---
+# Define location to store zrepl.yml and TLS certificates
+zrepl_config_path: "/etc/zrepl"
+
+# Should Prometheus stanza in zrepl.yml be included
+enable_prometheus: true
+
+# Should Threshold Script be enabled
+enable_threshold_script: false
+
+# Default Name and port of remote Zrepl Sink Server
+zrepl_sink_server: "zrepl.local:9448"
+
+# Default Name of ZFS zpool to work with
+zrepl_zfs_pool_name: "rpool"
+
+# Define bandwidth replication limit when sending
+# Examples: "10 MiB", "23.5 MiB", or disable: "-1 MiB"
+zrepl_send_bandwidth_limit: -1 MiB
+
+# Define Client TLS Certificate Names
+zrepl_tls_ca_crt_name: "ca.crt"
+zrepl_tls_cert_name: "{{ ansible_hostname }}.crt"
+zrepl_tls_private_key_name: "{{ ansible_hostname }}.key"
+zrepl_tls_server_cn: "sink-srv"
+
+zrepl_snapjobs:
+  - name: rancher           # snapjob_rancher
+    filesystems: |
+      "{{ zrepl_zfs_pool_name }}/rancher<": true,
+    send_options: |
+      encrypted: true
+      send_properties: false
+      bandwidth_limit:
+        max: {{ zrepl_send_bandwidth_limit }}
+    replication_options: |
+      protection:
+        initial: guarantee_resumability
+        incremental: guarantee_incremental
+    snapshotting_options: |
+      type: periodic
+      interval: 10m
+      prefix: zrepl_
+      timestamp_format: dense
+    pruning_options: |
+      keep_sender:
+        # fade-out scheme for snapshots
+        # - keep all created in the last hour
+        # - then destroy snapshots such that we keep 6 each 1 hour apart
+        # - then destroy snapshots such that we keep 1 each 1 day apart
+        # - then destroy all older snapshots
+        - type: grid
+          grid: 1x1h(keep=all) | 6x1h | 1x1d
+          regex: "^zrepl_.*"
+        # keep all snapshots that don't have the `zrepl_` prefix.
+        - type: regex
+          negate: true
+          regex: "^(zrepl)_.*"
+
+      keep_receiver:
+        # Keep snapshots longer on sink server as it has more storage
+        # keep all created in the last hour
+        # keep 24 each 1 hour apart / keep 30 each 1 day apart / keep 4 each 30 days apart
+        # then destroy all older snapshots
+        - type: grid
+          grid: 1x1h(keep=all) | 24x1h | 30x1d | 4x30d
+          regex: "^zrepl_.*"
+        # retain all non-zrepl snapshots on the sink server
+        - type: regex
+          negate: true
+          regex: "^zrepl_.*"
+
+  - name: boot_root_home  # snapjob_boot_root_home
+    filesystems: |
+      {{ zrepl_filesystems | default('"{{ zrepl_zfs_pool_name }}/ROOT<": true,') }}
+    send_options: |
+      encrypted: true
+      send_properties: false
+      bandwidth_limit:
+        max: {{ zrepl_send_bandwidth_limit }}
+    replication_options: |
+      protection:
+        initial: guarantee_resumability
+        incremental: guarantee_incremental
+    snapshotting_options: |
+      type: periodic
+      interval: 1h
+      prefix: zrepl_
+      timestamp_format: dense
+    pruning_options: |
+      keep_sender:
+        # fade-out scheme for snapshots
+        # - keep all created in the last hour
+        # - then destroy snapshots such that we keep 24 each 1 hour apart
+        # - then destroy snapshots such that we keep 2 each 1 day apart
+        # - then destroy all older snapshots
+        - type: grid
+          grid: 1x1h(keep=all) | 24x1h | 2x1d
+          regex: "^zrepl_.*"
+        # Only keep the last 10 of the auto snaps by apt
+        - type: last_n
+          count: 10
+          regex: "^apt_.*"
+        # Only keep the last 10 of the auto snaps by zsys
+        - type: last_n
+          count: 10
+          regex: "^autozsys_.*"
+        # keep all snapshots that don't have the `zrepl_`, `apt_`, `autozsys_` prefix.
+        # The apt snapshots are governed by the apt last_n policy above
+        # The autozsys snapshots are governed by the autozsys last_n policy above
+        - type: regex
+          negate: true
+          regex: "^(zrepl|apt|autozsys)_.*"
+
+      keep_receiver:
+        # Keep snapshots longer on sink server as it has more storage
+        # keep all created in the last hour
+        # keep 24 each 1 hour apart / keep 30 each 1 day apart / keep 4 each 30 days apart
+        # then destroy all older snapshots
+        - type: grid
+          grid: 1x1h(keep=all) | 24x1h | 30x1d | 4x30d
+          regex: "^zrepl_.*"
+        # retain last 10 non-zrepl snapshots on the sink server
+        - type: last_n
+          count: 10
+          regex: "^zrepl_.*"
