@@ -6,7 +6,7 @@ An Ansible role to provide an automated _ZREPL Sink Client_ templated deployment
 
 ## TL;DR
 
-* This does not install the Zrepl client, existing installation is required
+* This does not install the [Zrepl client](https://zrepl.github.io/installation.html), existing installation is required
 * This does not create/generate the TLS certificates
   * Does push TLS certificates needed by the client to connect to the sink server
 * Uses a templated configuration but not designed to support unique per instance configurations
@@ -244,5 +244,11 @@ This is an example playbook named `zrepl_sink_tls_client.yml`:
 ansible-playbook -i inventory zrepl_sink_tls_client.yml
 
 # Use Ansible's limit parameter to specify individual hostname to run on:
-ansible-playbook -i inventory zrepl_sink_tls_client.yml -l testlinux.example.com
+ansible-playbook -i inventory zrepl_sink_tls_client.yml -l testlinux.mydomain.com
 ```
+
+---
+
+Example Grafana dashboard I made showing my 6 node kubernetes cluster, my desktop and the Zrepl Sink Server:
+
+![Grafana Dashboard for Sink Server](./docs/grafana_sink_server_dashboard.png)
