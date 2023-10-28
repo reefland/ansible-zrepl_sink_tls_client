@@ -246,9 +246,3 @@ ansible-playbook -i inventory zrepl_sink_tls_client.yml
 # Use Ansible's limit parameter to specify individual hostname to run on:
 ansible-playbook -i inventory zrepl_sink_tls_client.yml -l testlinux.mydomain.com
 ```
-
----
-
-Example Grafana dashboard I made showing my 6 node kubernetes cluster, my desktop and the Zrepl Sink Server:
-
-![Grafana Dashboard for Sink Server](./docs/grafana_sink_server_dashboard.png)
