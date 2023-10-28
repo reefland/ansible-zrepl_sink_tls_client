@@ -8,10 +8,10 @@ An Ansible role to provide an automated _ZREPL Sink Client_ templated deployment
 
 * This does not install the Zrepl client, existing installation is required
 * This does not create/generate the TLS certificates
-  * Does push TLS certificates for the client and sink server
+  * Does push TLS certificates needed by the client to connect to the sink server
 * Uses a templated configuration but not designed to support unique per instance configurations
   * Intended to be used for pushing out a common baseline sink configuration
-  * Usually only a single Zrepl sink job is required, this is predefined to use two sink jobs:
+  * Usually only a single Zrepl sink job is required, examples here show two sink jobs:
     1) One for ZFS datasets
     2) Another for ZFS ZVOLs (requires different attribute settings)
 * Some per host settings can be defined via Ansible inventory or other ansible methods to override defaults
@@ -78,7 +78,7 @@ zrepl_sink_tls_client_group:
 
 ### Review `defaults/main.yml` to define the defaults
 
-The `defaults/main.yml` can be used to configure the default values including multiple sink jobs for the client.
+The `defaults/main.yml` can be used to configure the default values including multiple sink jobs for the client.  These defaults can be overwritten by any of the typical Ansible variable methods such as using inventory variables.
 
 #### Generic Zrepl Sink Settings
 
@@ -226,3 +226,23 @@ You can define multiple [zrepl pruning policies](https://zrepl.github.io/configu
 
 ## Running this playbook
 
+This is an example playbook named `zrepl_sink_tls_client.yml`:
+
+```yaml
+---
+- name: Update zrepl TLS Client for Sink Server Replication
+  hosts: zrepl_sink_tls_client_group
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: zrepl_sink_tls_client
+```
+
+```bash
+# Apply playbook to all hosts defined in group
+ansible-playbook -i inventory zrepl_sink_tls_client.yml
+
+# Use Ansible's limit parameter to specify individual hostname to run on:
+ansible-playbook -i inventory zrepl_sink_tls_client.yml -l testlinux.example.com
+```
