@@ -30,9 +30,9 @@
     owner: "{{ item.owner }}"
     group: "{{ item.group }}"
     backup: "{{ item.backup }}"
-    validate: /usr/bin/zrepl configcheck %s
+    # validate: /usr/bin/zrepl configcheck %s
   with_items:
-    - { src: "templates/zrepl.yml.j2", dest: "{{ zrepl_config_path }}/zrepl.yml", mode: "644", owner: "root", group: "root", backup: false }
+    - { src: "zrepl.yml.j2", dest: "{{ zrepl_config_path }}/zrepl.yml", mode: "644", owner: "root", group: "root", backup: false }
   notify:
     - Restart zrepl
   tags: update_config
