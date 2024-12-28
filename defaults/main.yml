@@ -95,7 +95,7 @@ zrepl_snapjobs:
         # - then destroy snapshots such that we keep 2 each 1 day apart
         # - then destroy all older snapshots
         - type: grid
-          grid: 1x1h(keep=all) | 24x1h | 2x1d
+          grid: 1x1h(keep=all) | 24x1h | 4x1d
           regex: "^zrepl_.*"
         # Only keep the last 10 of the auto snaps by apt
         - type: last_n
@@ -118,7 +118,7 @@ zrepl_snapjobs:
         # keep 24 each 1 hour apart / keep 30 each 1 day apart / keep 4 each 30 days apart
         # then destroy all older snapshots
         - type: grid
-          grid: 1x1h(keep=all) | 24x1h | 30x1d | 4x30d
+          grid: 1x1h(keep=all) | 24x1h | 7x1d | 2x30d
           regex: "^zrepl_.*"
         # retain last 10 non-zrepl snapshots on the sink server
         - type: last_n
